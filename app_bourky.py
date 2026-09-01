@@ -19,17 +19,15 @@ st.set_page_config(
 # ==========================================
 # 1. NAČTENÍ A CHYTRÁ FILTRACE DAT
 # ==========================================
-@st.cache_data
+@st.cache_data(ttl=3600)  # Automatické promazání cache každou hodinu
 def nacti_data():
   file_path = "thunder2crossplatforms.xlsx"
-  # Načteme bez předpokladu pevné hlavičky pro snadnou detekci více tabulek
   df_raw = pd.read_excel(file_path, header=None)
 
-  # Najdeme indexy řádků, kde v prvním sloupci leží hlavička 'Date'
   header_indices = df_raw[df_raw[0] == "Date"].index.tolist()
 
   if len(header_indices) < 2:
-    h1_idx, h2_idx = 3, 374  # Záložní indexy
+    h1_idx, h2_idx = 3, 374
   else:
     h1_idx, h2_idx = header_indices[0], header_indices[1]
 
@@ -78,11 +76,9 @@ except Exception as e:
   st.error(f"Nepodařilo se načíst Excel. Chyba: {e}")
   st.stop()
 
-# Garantované textové X osy pro grafy, které se nesmí přeskakovat
 x_str = roky_sloupce
-N = len(x_str)  # Zámek na délku všech polí
+N = len(x_str)
 
-# Odříznutí neuzavřeného letoska pro dlouhodobé statistiky
 posledni_uzavreny_rok = posledni_aktivni_rok - 1
 roky_uzavrene = [
     rok for rok in roky_sloupce if int(rok) <= posledni_uzavreny_rok
@@ -122,7 +118,6 @@ st.divider()
 # ==========================================
 # 4. KRESLENÍ (Graf 1A & 1B: Kumulativní normály)
 # ==========================================
-# --- GRAF 1A: Celkové bouřky (Totals) ---
 st.subheader("📈 Kumulativní normál a průběh sezóny (Celkové bouřky)")
 
 df_stats = pd.DataFrame(index=df_uzavrene.index)
@@ -208,8 +203,8 @@ ax1.set_xlim(dummy_dates[0], dummy_dates[-1])
 ax1.set_ylim(bottom=0)
 ax1.legend(loc="upper left")
 st.pyplot(fig1)
+plt.close(fig1)
 
-# --- GRAF 1B: Přímé a blízké bouřky (Direct / Near Storms) ---
 st.subheader(
     "📈 Kumulativní normál a průběh sezóny (Přímé a blízké bouřky - Direct /"
     " Near)"
@@ -300,6 +295,7 @@ ax1b.set_xlim(dummy_dates_direct[0], dummy_dates_direct[-1])
 ax1b.set_ylim(bottom=0)
 ax1b.legend(loc="upper left")
 st.pyplot(fig1b)
+plt.close(fig1b)
 
 st.divider()
 
@@ -349,12 +345,14 @@ for i, txt in enumerate(td_amount):
   )
 
 ax2.set_ylim(0, max(td_amount) + 10)
+ax2.set_xticks(range(len(x_str)))
 ax2.set_xticklabels(x_str, rotation=45, ha="right")
 ax2.grid(True, alpha=0.4, linestyle="--")
 ax2.spines["top"].set_visible(False)
 ax2.spines["right"].set_visible(False)
 ax2.legend(loc="lower left")
 st.pyplot(fig2)
+plt.close(fig2)
 
 st.divider()
 
@@ -482,7 +480,6 @@ data_events = {
     ],
 }
 
-# Absolutní zarovnání délek
 for k in data_events.keys():
   while len(data_events[k]) < N:
     data_events[k].append(0)
@@ -529,6 +526,7 @@ ax3.grid(True, axis="y", alpha=0.3, linestyle="--")
 ax3.spines["top"].set_visible(False)
 ax3.spines["right"].set_visible(False)
 st.pyplot(fig3)
+plt.close(fig3)
 
 st.divider()
 
@@ -572,12 +570,14 @@ ax4.plot(
 ax4.set_ylim(-4, 4)
 ax4.set_yticks(np.arange(-4, 5, 1))
 ax4.set_ylabel("Bodová klasifikace")
+ax4.set_xticks(range(len(x_str)))
 ax4.set_xticklabels(x_str, rotation=45, ha="right")
 ax4.grid(True, axis="both", alpha=0.3, linestyle="--")
 ax4.spines["top"].set_visible(False)
 ax4.spines["right"].set_visible(False)
 ax4.legend(loc="center left", bbox_to_anchor=(1, 0.5), frameon=False)
 st.pyplot(fig4)
+plt.close(fig4)
 
 st.divider()
 
@@ -941,7 +941,6 @@ mesicni_data = {
     ],
 }
 
-# Absolutní zarovnání
 for k in mesicni_data.keys():
   while len(mesicni_data[k]) < N:
     mesicni_data[k].append(0)
@@ -978,12 +977,14 @@ ax5.plot(
 
 ax5.yaxis.set_major_locator(MaxNLocator(integer=True))
 ax5.set_ylim(bottom=0)
+ax5.set_xticks(range(len(x_str)))
 ax5.set_xticklabels(x_str, rotation=45, ha="right")
 ax5.grid(True, axis="both", alpha=0.3, linestyle="--")
 ax5.spines["top"].set_visible(False)
 ax5.spines["right"].set_visible(False)
 ax5.legend(loc="center left", bbox_to_anchor=(1, 0.5), frameon=False)
 st.pyplot(fig5)
+plt.close(fig5)
 
 st.divider()
 
@@ -1037,6 +1038,7 @@ ax6.grid(True, axis="both", alpha=0.3, linestyle="--")
 ax6.spines["top"].set_visible(False)
 ax6.spines["right"].set_visible(False)
 st.pyplot(fig6)
+plt.close(fig6)
 
 st.divider()
 
@@ -1164,6 +1166,7 @@ for x, y1, y2 in zip(valid_years, first_storms, last_storms):
 ax7.yaxis.set_major_formatter(
     FuncFormatter(lambda val, pos: bezpecne_datum(val))
 )
+ax7.set_xticks(range(len(valid_years)))
 ax7.set_xticklabels(valid_years, rotation=45, ha="right")
 ax7.set_ylabel("Day of year")
 ax7.grid(True, axis="both", alpha=0.3, linestyle="--")
@@ -1171,6 +1174,7 @@ ax7.spines["top"].set_visible(False)
 ax7.spines["right"].set_visible(False)
 ax7.legend(loc="upper left", bbox_to_anchor=(1.02, 1), frameon=False)
 st.pyplot(fig7)
+plt.close(fig7)
 
 st.divider()
 
@@ -1241,6 +1245,7 @@ with colA:
   ax_top.spines["right"].set_visible(False)
   ax_top.grid(axis="x", linestyle="--", alpha=0.3)
   st.pyplot(fig_top)
+  plt.close(fig_top)
 
 with colB:
   st.markdown("### 🛡️ Dny, kdy v Mostě 'nehřmí'")
@@ -1272,7 +1277,7 @@ if len(nenulove_hodnoty) > 0:
       st.button(
           f"{datum.strftime('%d. %b')}",
           key=f"rare_unicorn_{den_idx}",
-          use_container_width=True,
+          width="stretch",
       )
 
 st.divider()
@@ -1356,6 +1361,7 @@ with c2:
   ax_acc.spines["right"].set_visible(False)
   ax_acc.legend(loc="upper left")
   st.pyplot(fig_acc)
+  plt.close(fig_acc)
 
 st.divider()
 
@@ -1465,6 +1471,7 @@ with c_gra:
   ax_mom.spines["right"].set_visible(False)
   ax_mom.set_ylabel("Síla trendu")
   st.pyplot(fig_mom)
+  plt.close(fig_mom)
 
 st.divider()
 
@@ -1536,6 +1543,7 @@ if vitezny_konec > 0:
   ])
   ax8.grid(True, alpha=0.2)
   st.pyplot(fig8)
+  plt.close(fig8)
 
 st.divider()
 
@@ -1584,7 +1592,7 @@ with c_prob2:
       yaxis=dict(title="Pravděpodobnost (%)"),
       hovermode="x unified",
   )
-  st.plotly_chart(fig_prob, use_container_width=True)
+  st.plotly_chart(fig_prob, width="stretch")
 
 st.divider()
 
@@ -1614,7 +1622,7 @@ def ziskej_era5_sezona(roky_seznam):
   return None
 
 
-@st.cache_data(ttl=604800)  # Aktualizace 1x týdně
+@st.cache_data(ttl=604800)
 def stahni_nao():
   url = "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/norm.nao.monthly.b5001.current.ascii"
   try:
@@ -1744,7 +1752,6 @@ if df_raw_klima is not None:
     df_agg.rename(columns={"Datum": "Rok"}, inplace=True)
     df_agg["Pocet_Bourek"] = bourky_v_mesici
 
-  # Připojení dat NAO
   if df_nao is not None:
     if vybrany_mesic_klic == 0:
       nao_filt = (
@@ -1761,7 +1768,6 @@ if df_raw_klima is not None:
   else:
     df_agg["NAO_Index"] = np.nan
 
-  # Připojení dat ENSO
   if df_enso is not None:
     if vybrany_mesic_klic == 0:
       enso_filt = (
@@ -1781,7 +1787,6 @@ if df_raw_klima is not None:
   df_agg["Anom_Temp"] = df_agg["Teplota"] - df_agg["Teplota"].mean()
   df_agg["Anom_Rosny"] = df_agg["Rosny_Bod"] - df_agg["Rosny_Bod"].mean()
 
-  # Výběr vizuálu podle vybraného parametru
   if "Teplotní" in parametr_k_analyze:
     x_col, scale = "Anom_Temp", "RdBu_r"
   elif "srážky" in parametr_k_analyze:
@@ -1837,7 +1842,7 @@ if df_raw_klima is not None:
       borderwidth=2,
       borderpad=8,
   )
-  st.plotly_chart(fig, use_container_width=True)
+  st.plotly_chart(fig, width="stretch")
 
   if "NAO" in parametr_k_analyze:
     st.info(
@@ -1866,9 +1871,8 @@ st.markdown(
 
 @st.cache_data
 def nacti_klimaticka_data():
-  import numpy as np  # Importujeme pro chytrý posun prosince do zimního období
+  import numpy as np
 
-  # 1. STAŽENÍ SRÁŽEK (Copernicus ERA5)
   url_meteo = (
       "https://archive-api.open-meteo.com/v1/archive?"
       "latitude=50.503&longitude=13.636&"
@@ -1881,7 +1885,6 @@ def nacti_klimaticka_data():
   df_precip["Rok"] = df_precip["time"].dt.year
   df_precip["Mesic"] = df_precip["time"].dt.month
 
-  # Agregace srážek: Roční, Letní (6,7,8), Jarní (3,4,5)
   df_rocni = (
       df_precip.groupby("Rok")["precipitation_sum"]
       .sum()
@@ -1903,7 +1906,6 @@ def nacti_klimaticka_data():
       .rename(columns={"precipitation_sum": "Srazky_Jaro"})
   )
 
-  # Agregace srážek: Zimní (12 z minulého roku + 1, 2)
   df_precip["Rok_Zima"] = np.where(
       df_precip["Mesic"] == 12, df_precip["Rok"] + 1, df_precip["Rok"]
   )
@@ -1917,7 +1919,6 @@ def nacti_klimaticka_data():
       )
   )
 
-  # 2. STAŽENÍ ENSO INDEXU (NOAA ONI)
   url_enso = "https://www.cpc.ncep.noaa.gov/data/indices/oni.ascii.txt"
   r_enso = requests.get(url_enso)
   df_enso = pd.read_csv(io.StringIO(r_enso.text), delim_whitespace=True)
@@ -1938,7 +1939,6 @@ def nacti_klimaticka_data():
       columns={"YR": "Rok", "ANOM": "ENSO_Zima"}
   )
 
-  # 3. STAŽENÍ NAO INDEXU (NOAA CPC)
   url_nao = "https://www.cpc.ncep.noaa.gov/products/precip/CWlink/pna/norm.nao.monthly.b5001.current.ascii"
   r_nao = requests.get(url_nao)
   df_nao = pd.read_csv(
@@ -1969,7 +1969,6 @@ def nacti_klimaticka_data():
       .rename(columns={"NAO": "NAO_Jaro"})
   )
 
-  # Zimní NAO (opět posun prosince do nového roku)
   df_nao["Rok_Zima"] = np.where(
       df_nao["Mesic"] == 12, df_nao["Rok"] + 1, df_nao["Rok"]
   )
@@ -1981,7 +1980,6 @@ def nacti_klimaticka_data():
       .rename(columns={"Rok_Zima": "Rok", "NAO": "NAO_Zima"})
   )
 
-  # 4. SLOUČENÍ VŠECH DAT (použijeme outer spojení pro bezpečnost)
   dfs = [
       df_rocni,
       df_leto,
@@ -2003,7 +2001,6 @@ def nacti_klimaticka_data():
       lambda left, right: pd.merge(left, right, on="Rok", how="outer"), dfs
   )
 
-  # Ořízneme roky a vyhodíme chybějící data (např. budoucí nebo nedokončené sezóny)
   df_final = df_final[
       (df_final["Rok"] >= 1993) & (df_final["Rok"] <= 2024)
   ].dropna()
@@ -2015,7 +2012,6 @@ def nacti_klimaticka_data():
 try:
   df_klima = nacti_klimaticka_data()
 
-  # Rozšířené roletky pro výběr X a Y na dashboardu
   col_klima1, col_klima2 = st.columns(2)
   with col_klima1:
     x_moznosti = [
@@ -2037,10 +2033,8 @@ try:
         "Vyberte období pro Srážky (Osa Y):", options=y_moznosti, index=0
     )
 
-  # Výpočet korelace Pearson r
   r_val = df_klima[x_osa].corr(df_klima[y_osa])
 
-  # Vykreslení grafu
   fig_klima = px.scatter(
       df_klima,
       x=x_osa,
@@ -2073,7 +2067,6 @@ try:
       yaxis_title=f"Srážky [mm] ({y_osa})",
   )
 
-  # Rámeček s korelací
   fig_klima.add_annotation(
       x=0.02,
       y=0.98,
@@ -2088,7 +2081,7 @@ try:
       borderpad=4,
   )
 
-  st.plotly_chart(fig_klima, use_container_width=True)
+  st.plotly_chart(fig_klima, width="stretch")
 
 except Exception as e:
   st.error(f"Nepodařilo se načíst data pro klimatologický graf. Chyba: {e}")
